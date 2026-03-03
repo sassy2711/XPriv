@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://yourcompany.com/privacy-rules"
+    xmlns="http://yourcompany.com/privacy-rules"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+
+    <!-- Root element -->
+
+    <xs:element name="privacyPolicy">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="rule" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+
+                            <!-- XPath expression -->
+                            <xs:element name="path" type="xs:string"/>
+
+                            <!-- Action -->
+                            <xs:element name="action">
+                                <xs:complexType>
+                                    <xs:attribute name="type" use="required">
+                                        <xs:simpleType>
+                                            <xs:restriction base="xs:string">
+                                                <xs:enumeration value="clear"/>
+                                                <xs:enumeration value="mask"/>
+                                                <xs:enumeration value="refuse"/>
+                                            </xs:restriction>
+                                        </xs:simpleType>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+
+                            <!-- Role binding -->
+                            <xs:element name="appliesTo">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="role" type="xs:string" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+
+                        </xs:sequence>
+
+                        <!-- Rule identifier -->
+                        <xs:attribute name="id" type="xs:string" use="required"/>
+
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

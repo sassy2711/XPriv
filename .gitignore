@@ -1,0 +1,9 @@
+# Compiled files
+*.class
+
+# JAR files
+*.jar
+
+# Generated output
+filtered-output.xml
+
