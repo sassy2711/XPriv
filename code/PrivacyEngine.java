@@ -8,6 +8,8 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.util.*;
 
+
+
 public class PrivacyEngine {
 
     public static void main(String[] args) throws Exception {
@@ -20,9 +22,9 @@ public class PrivacyEngine {
         Document dataDoc = loadXML(dataFile);
         Document ruleDoc = loadXML(ruleFile);
 
+        Document filteredDoc =
         processQuery(dataDoc, ruleDoc, queryXPath, userRole);
-
-        writeXML(dataDoc, "../data/filtered-output.xml");
+        writeXML(filteredDoc, "../data/filtered-output.xml");
 
         System.out.println("Filtered document written to filtered-output.xml");
     }
@@ -41,7 +43,7 @@ public class PrivacyEngine {
         transformer.transform(new DOMSource(doc), new StreamResult(new File(filePath)));
     }
 
-    private static void processQuery(Document dataDoc,
+    private static Document processQuery(Document dataDoc,
                                      Document ruleDoc,
                                      String queryXPath,
                                      String userRole) throws Exception {
@@ -51,10 +53,19 @@ public class PrivacyEngine {
 
         // Step 1: Extract Subtree (based on query)
         NodeList queryNodes = (NodeList) xpath.evaluate(queryXPath, dataDoc, XPathConstants.NODESET);
+        //these are the subtree nodes that the client is interested in
 
         if (queryNodes.getLength() == 0) {
             System.out.println("No matching query nodes found.");
-            return;
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document outputDoc = builder.newDocument();
+
+            // Create a root element for output and return an empty doc
+            Element root = outputDoc.createElement("result");
+            root.getElementsByTagName("result").item(0).setTextContent("No result corresponding to query");
+            outputDoc.appendChild(root);
+            return outputDoc;//empty output doc
         }
 
         // Step 2: Parse rules
@@ -66,7 +77,7 @@ public class PrivacyEngine {
 
             Element rule = (Element) rules.item(i);
 
-            String path = getTextContent(rule, "path");
+            String path = getTextContent(rule, "path");//the path to which the rule applies to 
             String actionType = ((Element) rule.getElementsByTagNameNS(
                     "http://yourcompany.com/privacy-rules", "action")
                     .item(0)).getAttribute("type");
@@ -80,11 +91,14 @@ public class PrivacyEngine {
             for (int q = 0; q < queryNodes.getLength(); q++) {
 
                 Node queryNode = queryNodes.item(q);
-
+                
+                //Not sure if this will work in all cases but for now, we'll use this
+                String relative_path = path.replace(queryXPath, "/");
                 matchedNodes =
-                    (NodeList) xpath.evaluate(path, queryNode, XPathConstants.NODESET);
+                    (NodeList) xpath.evaluate(relative_path, queryNode, XPathConstants.NODESET);
 
-                for (int j = 0; j < matchedNodes.getLength(); j++) {
+                
+                    for (int j = 0; j < matchedNodes.getLength(); j++) {
                     Node node = matchedNodes.item(j);
 
                     if (actionType.equals("refuse")) {
@@ -95,6 +109,25 @@ public class PrivacyEngine {
                 }
             }
         }
+
+        // Create new empty document for output
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document outputDoc = builder.newDocument();
+
+        // Create a root element for output
+        Element root = outputDoc.createElement("result");
+        outputDoc.appendChild(root);
+
+        // Import each filtered queryNode into new document
+        for (int i = 0; i < queryNodes.getLength(); i++) {
+            Node filteredNode = queryNodes.item(i);
+
+            Node importedNode = outputDoc.importNode(filteredNode, true);
+            root.appendChild(importedNode);
+        }
+
+        return outputDoc;
     }
 
     private static boolean roleMatches(Element rule, String userRole) {
@@ -142,4 +175,16 @@ public class PrivacyEngine {
             maskSubtree(children.item(i));
         }
     }
+
+    //helps in debugging
+    public static void printNode(Node node) throws Exception {
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+
+        transformer.transform(new DOMSource(node), new StreamResult(System.out));
+    }
+    // System.out.print("----------------------------------\n");
+    // printNode(queryNode);
+    // System.out.print("----------------------------------\n");
 }

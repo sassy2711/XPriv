@@ -13,9 +13,9 @@
         </appliesTo>
     </rule>
 
-    <!-- Interns cannot see exact residential location -->
+    <!-- Interns cannot see exact residental location -->
     <rule id="R2">
-        <path>/dataset/n_44/n_patient_info/n_residential_info</path>
+        <path>/dataset/n_44/n_patient_info/n_residental_info</path>
         <action type="refuse"/>
         <appliesTo>
             <role>INTERN</role>
@@ -102,18 +102,18 @@
         </appliesTo>
     </rule>
 
-    <!-- Support cannot see residential latitude -->
+    <!-- Support cannot see residental latitude -->
     <rule id="R11">
-        <path>/dataset/n_44/n_patient_info/n_residential_info/n_lat</path>
+        <path>/dataset/n_44/n_patient_info/n_residental_info/n_lat</path>
         <action type="mask"/>
         <appliesTo>
             <role>SUPPORT</role>
         </appliesTo>
     </rule>
 
-    <!-- Support cannot see residential longitude -->
+    <!-- Support cannot see residental longitude -->
     <rule id="R12">
-        <path>/dataset/n_44/n_patient_info/n_residential_info/n_lng</path>
+        <path>/dataset/n_44/n_patient_info/n_residental_info/n_lng</path>
         <action type="mask"/>
         <appliesTo>
             <role>SUPPORT</role>
