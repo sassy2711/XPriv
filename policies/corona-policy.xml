@@ -1,137 +1,122 @@
 <privacyPolicy xmlns="http://yourcompany.com/privacy-rules">
 
-    <!-- ========================
-         INTERN Role
-         ======================== -->
-
-    <!-- Interns cannot see religion -->
-    <rule id="R1">
-        <path>/dataset/n_44/n_patient_info/n_religion</path>
-        <action type="refuse"/>
+    <rule id="R1" priority="60">
+        <path>/dataset/*/n_patient_info/n_residental_info</path>
+        <action type="mask" />
+        <appliesTo>
+            <role>INTERN</role>
+        </appliesTo>
+    </rule>
+    
+    <rule id="R2" priority="50">
+        <path>/dataset/*/n_patient_info/n_residental_info</path>
+        <action type="refuse" />
         <appliesTo>
             <role>INTERN</role>
         </appliesTo>
     </rule>
 
-    <!-- Interns cannot see exact residental location -->
-    <rule id="R2">
-        <path>/dataset/n_44/n_patient_info/n_residental_info</path>
-        <action type="refuse"/>
-        <appliesTo>
-            <role>INTERN</role>
-        </appliesTo>
-    </rule>
-
-    <!-- Interns cannot see infection isolation place -->
-    <rule id="R3">
-        <path>/dataset/n_44/n_infection_info/n_isolation_place</path>
-        <action type="refuse"/>
-        <appliesTo>
-            <role>INTERN</role>
-        </appliesTo>
-    </rule>
-
-    <!-- Interns cannot see route visit coordinates -->
-    <rule id="R4">
-        <path>/dataset/n_44/n_route/item/n_lat</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>INTERN</role>
-        </appliesTo>
-    </rule>
-
-    <rule id="R5">
-        <path>/dataset/n_44/n_route/item/n_lng</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>INTERN</role>
-        </appliesTo>
-    </rule>
-
-
-    <!-- ========================
-         PUBLIC Role
-         ======================== -->
-
-    <!-- Public cannot see patient ID -->
-    <rule id="R6">
-        <path>/dataset/n_44/n_patient_info/n_patient_id</path>
-        <action type="refuse"/>
-        <appliesTo>
-            <role>PUBLIC</role>
-        </appliesTo>
-    </rule>
-
-    <!-- Public cannot see infection factor -->
-    <rule id="R7">
-        <path>/dataset/n_44/n_infection_info/n_infection_factor</path>
-        <action type="refuse"/>
-        <appliesTo>
-            <role>PUBLIC</role>
-        </appliesTo>
-    </rule>
-
-    <!-- Public cannot see exact route timing -->
-    <rule id="R8">
-        <path>/dataset/n_44/n_route/item/n_start_time</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>PUBLIC</role>
-        </appliesTo>
-    </rule>
-
-    <rule id="R9">
-        <path>/dataset/n_44/n_route/item/n_end_time</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>PUBLIC</role>
-        </appliesTo>
-    </rule>
-
-
-    <!-- ========================
-         SUPPORT Role
-         ======================== -->
-
-    <!-- Support cannot see religion -->
-    <rule id="R10">
-        <path>/dataset/n_44/n_patient_info/n_religion</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>SUPPORT</role>
-        </appliesTo>
-    </rule>
-
-    <!-- Support cannot see residental latitude -->
-    <rule id="R11">
-        <path>/dataset/n_44/n_patient_info/n_residental_info/n_lat</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>SUPPORT</role>
-        </appliesTo>
-    </rule>
-
-    <!-- Support cannot see residental longitude -->
-    <rule id="R12">
-        <path>/dataset/n_44/n_patient_info/n_residental_info/n_lng</path>
-        <action type="mask"/>
-        <appliesTo>
-            <role>SUPPORT</role>
-        </appliesTo>
-    </rule>
-
-
-    <!-- ========================
-         ADMIN Role
-         ======================== -->
-
-    <!-- Admin gets full access -->
-    <rule id="R13">
-        <path>/dataset/n_44</path>
+    <!-- <rule id="R13" priority="100">
+        <path>/dataset/*</path>
         <action type="clear"/>
         <appliesTo>
             <role>ADMIN</role>
         </appliesTo>
     </rule>
+
+    <rule id="R6" priority="50">
+        <path>/dataset/*/n_patient_info/n_patient_id</path>
+        <action type="refuse"/>
+        <appliesTo>
+            <role>PUBLIC</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R7" priority="50">
+        <path>/dataset/*/n_infection_info/n_infection_factor</path>
+        <action type="refuse"/>
+        <appliesTo>
+            <role>PUBLIC</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R8" priority="50">
+        <path>/dataset/*/n_route/item/n_start_time</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>PUBLIC</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R9" priority="50">
+        <path>/dataset/*/n_route/item/n_end_time</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>PUBLIC</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R1" priority="30">
+        <path>/dataset/*/n_patient_info</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>INTERN</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R2" priority="35"> <path>/dataset/*/n_patient_info/n_residential_info</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>INTERN</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R3" priority="30">
+        <path>/dataset/*/n_infection_info/n_isolation_place</path>
+        <action type="refuse"/>
+        <appliesTo>
+            <role>INTERN</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R4" priority="30">
+        <path>/dataset/*/n_route/item/n_lat</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>INTERN</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R5" priority="30">
+        <path>/dataset/*/n_route/item/n_lng</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>INTERN</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R10" priority="20">
+        <path>/dataset/*/n_patient_info/n_religion</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>SUPPORT</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R11" priority="20">
+        <path>/dataset/*/n_patient_info/n_residental_info/n_lat</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>SUPPORT</role>
+        </appliesTo>
+    </rule>
+
+    <rule id="R12" priority="20">
+        <path>/dataset/*/n_patient_info/n_residental_info/n_lng</path>
+        <action type="mask"/>
+        <appliesTo>
+            <role>SUPPORT</role>
+        </appliesTo>
+    </rule> -->
 
 </privacyPolicy>
