@@ -1,190 +1,225 @@
-import org.w3c.dom.*;
-import javax.xml.parsers.*;
-import javax.xml.xpath.*;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-
-import java.io.File;
+import org.w3c.dom.*; // DOM classes for XML handling
+import javax.xml.parsers.*; // For parsing XML documents
+import javax.xml.xpath.*; // For XPath queries
 import java.util.*;
 
+// Helper class to store resolved state
+class ResolvedState 
+{
+    TrieNode node;
+    String action;
+    int priority;
 
+    ResolvedState(TrieNode n, String a, int p) 
+    {
+        node = n;
+        action = a;
+        priority = p;
+    }
+}
 
-public class PrivacyEngine {
+public class PrivacyEngine
+{
+    private static XMLHelper xmlHelper;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception 
+    {
+        xmlHelper = new XMLHelper();
 
+        // Input dataset XML
         String dataFile = "../data/corona-dataset.xml";
+
+        // Policy rules XML
         String ruleFile = "../policies/corona-policy.xml";
-        String queryXPath = "/dataset/n_44/n_patient_info";
-        String userRole = "INTERN";
 
-        Document dataDoc = loadXML(dataFile);
-        Document ruleDoc = loadXML(ruleFile);
+        // XPath query to select nodes
+        String queryXPath = "/dataset/*/n_patient_info";
 
-        Document filteredDoc =
-        processQuery(dataDoc, ruleDoc, queryXPath, userRole);
-        writeXML(filteredDoc, "../data/filtered-output.xml");
+        // User role for filtering
+        String userRole = "MANAGER";
 
-        System.out.println("Filtered document written to filtered-output.xml");
+        XMLHelper xmlHelper = new XMLHelper();
+
+        // Load XML documents
+        Document dataDoc = xmlHelper.loadXML(dataFile);
+        Document ruleDoc = xmlHelper.loadXML(ruleFile);
+
+        // Process query with privacy filtering
+        Document filteredDoc = processQuery(dataDoc, ruleDoc, queryXPath, userRole);
+
+        // Write output XML
+        xmlHelper.writeXML(filteredDoc, "../data/filtered-output.xml");
+
+        System.out.println("Processing complete.");
     }
 
-    private static Document loadXML(String filePath) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        return builder.parse(new File(filePath));
-    }
+    // Main processing function
+    public static Document processQuery(Document dataDoc, Document ruleDoc, String queryXPath, String userRole) throws Exception 
+    {
+        XPath xpath = XPathFactory.newInstance().newXPath();
 
-    private static void writeXML(Document doc, String filePath) throws Exception {
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.transform(new DOMSource(doc), new StreamResult(new File(filePath)));
-    }
+        // Build Trie from rules
+        TrieNode rootRule = TrieNode.buildTrie(ruleDoc, userRole, xmlHelper);
 
-    private static Document processQuery(Document dataDoc,
-                                     Document ruleDoc,
-                                     String queryXPath,
-                                     String userRole) throws Exception {
-
-        XPathFactory xpf = XPathFactory.newInstance();
-        XPath xpath = xpf.newXPath();
-
-        // Step 1: Extract Subtree (based on query)
+        // Evaluate XPath query on data
         NodeList queryNodes = (NodeList) xpath.evaluate(queryXPath, dataDoc, XPathConstants.NODESET);
-        //these are the subtree nodes that the client is interested in
 
-        if (queryNodes.getLength() == 0) {
-            System.out.println("No matching query nodes found.");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document outputDoc = builder.newDocument();
+        // Create output document
+        Document outputDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Element resultRoot = outputDoc.createElement("result");
+        outputDoc.appendChild(resultRoot);
 
-            // Create a root element for output and return an empty doc
-            Element root = outputDoc.createElement("result");
-            root.getElementsByTagName("result").item(0).setTextContent("No result corresponding to query");
-            outputDoc.appendChild(root);
-            return outputDoc;//empty output doc
-        }
+        // Process each node returned by XPath
+        for (int i = 0; i < queryNodes.getLength(); i++) 
+        {
+            Node sourceNode = queryNodes.item(i);
 
-        // Step 2: Parse rules
-        NodeList rules = ruleDoc.getElementsByTagNameNS(
-                "http://yourcompany.com/privacy-rules", "rule");
+            // Get full path of node
+            String fullPath = xmlHelper.getFullPath(sourceNode);
 
-        // Step 3: Apply rules
-        for (int i = 0; i < rules.getLength(); i++) {
+            // Resolve rule state (action + priority)
+            ResolvedState state = resolvePathState(rootRule, fullPath);
 
-            Element rule = (Element) rules.item(i);
+            // Filter node based on rules
+            Node filtered = filterNode(sourceNode, outputDoc, state.node, state.action, state.priority);
 
-            String path = getTextContent(rule, "path");//the path to which the rule applies to 
-            String actionType = ((Element) rule.getElementsByTagNameNS(
-                    "http://yourcompany.com/privacy-rules", "action")
-                    .item(0)).getAttribute("type");
-
-            if (!roleMatches(rule, userRole)) {
-                continue;
+            // Add to result if not null
+            if (filtered != null) 
+            {
+                resultRoot.appendChild(filtered);
             }
-
-            NodeList matchedNodes = null;
-
-            for (int q = 0; q < queryNodes.getLength(); q++) {
-
-                Node queryNode = queryNodes.item(q);
-                
-                //Not sure if this will work in all cases but for now, we'll use this
-                String relative_path = path.replace(queryXPath, "/");
-                matchedNodes =
-                    (NodeList) xpath.evaluate(relative_path, queryNode, XPathConstants.NODESET);
-
-                
-                    for (int j = 0; j < matchedNodes.getLength(); j++) {
-                    Node node = matchedNodes.item(j);
-
-                    if (actionType.equals("refuse")) {
-                        removeSubtree(node);
-                    } else if (actionType.equals("mask")) {
-                        maskSubtree(node);
-                    }
-                }
-            }
-        }
-
-        // Create new empty document for output
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document outputDoc = builder.newDocument();
-
-        // Create a root element for output
-        Element root = outputDoc.createElement("result");
-        outputDoc.appendChild(root);
-
-        // Import each filtered queryNode into new document
-        for (int i = 0; i < queryNodes.getLength(); i++) {
-            Node filteredNode = queryNodes.item(i);
-
-            Node importedNode = outputDoc.importNode(filteredNode, true);
-            root.appendChild(importedNode);
         }
 
         return outputDoc;
     }
 
-    private static boolean roleMatches(Element rule, String userRole) {
+    // Recursive function to filter nodes based on rules
+    private static Node filterNode(Node source, Document destDoc, TrieNode ruleNode, String inheritedAction, int inheritedPriority) 
+    {
+        String currentAction = inheritedAction;
+        int currentPriority = inheritedPriority;
 
-        NodeList roles = rule.getElementsByTagNameNS(
-                "http://yourcompany.com/privacy-rules", "role");
-
-        for (int i = 0; i < roles.getLength(); i++) {
-            if (roles.item(i).getTextContent().equals(userRole)) {
-                return true;
+        // Override with rule at this node if higher priority
+        if (ruleNode != null && ruleNode.action != null) 
+        {
+            if (ruleNode.priority >= currentPriority) 
+            {
+                currentAction = ruleNode.action;
+                currentPriority = ruleNode.priority;
             }
         }
-        return false;
-    }
 
-    private static String getTextContent(Element parent, String tagName) {
+        Node newNode = null;
 
-        NodeList nodes = parent.getElementsByTagNameNS(
-                "http://yourcompany.com/privacy-rules", tagName);
+        boolean hasAllowedChildren = false; // tracks if any child survives
+        List<Node> filteredChildren = new ArrayList<>();
 
-        if (nodes.getLength() > 0) {
-            return nodes.item(0).getTextContent();
+        // Process children first (bottom-up approach)
+        NodeList children = source.getChildNodes();
+
+        for (int i = 0; i < children.getLength(); i++) 
+        {
+            Node child = children.item(i);
+
+            if (child.getNodeType() == Node.ELEMENT_NODE) 
+            {
+                // Move to next Trie node
+                TrieNode nextTrie = (ruleNode != null) ? ruleNode.getChild(child.getNodeName()) : null;
+
+                // Recursively filter child
+                Node filteredChild = filterNode(child, destDoc, nextTrie, currentAction, currentPriority);
+
+                if (filteredChild != null) 
+                {
+                    filteredChildren.add(filteredChild);
+                    hasAllowedChildren = true;
+                }
+
+            } 
+            
+            else if (child.getNodeType() == Node.TEXT_NODE && "clear".equals(currentAction)) 
+            {
+                // Keep text only if action is "clear"
+                filteredChildren.add(destDoc.importNode(child, true));
+            }
         }
-        return null;
-    }
 
-    private static void removeSubtree(Node node) {
+        // Apply action logic
+        if ("refuse".equals(currentAction)) 
+        {
+            if (hasAllowedChildren) 
+            {
+                // Keep node as "ghost" if children are allowed
+                newNode = destDoc.createElement(source.getNodeName());
+                
+                for (Node fc : filteredChildren) 
+                    newNode.appendChild(fc);
+                
+                return newNode;
+            } 
+            
+            else 
+            {
+                return null; // completely remove node
+            }
 
-        Node parent = node.getParentNode();
-        if (parent != null) {
-            parent.removeChild(node);
+        } 
+        
+        else if ("mask".equals(currentAction))
+        {
+            newNode = destDoc.createElement(source.getNodeName());
+
+            // Mask leaf node content
+            if (xmlHelper.isLeafElement(source)) 
+            {
+                newNode.setTextContent("*****");
+            } 
+            
+            else 
+            {
+                for (Node fc : filteredChildren) 
+                    newNode.appendChild(fc);
+            }
+
+            return newNode;
+        } 
+        
+        else 
+        {
+            // "clear" => keep node as is
+            newNode = destDoc.importNode(source, false);
+       
+            for (Node fc : filteredChildren) 
+                newNode.appendChild(fc);
+        
+            return newNode;
         }
     }
 
-    private static void maskSubtree(Node node) {
+    // Resolve action and priority for a given path
+    private static ResolvedState resolvePathState(TrieNode root, String path) 
+    {
+        TrieNode current = root;
+        String action = "clear"; // default
+        int priority = -1;
 
-        if (node.getNodeType() == Node.TEXT_NODE) {
-            node.setTextContent("****");
-            return;
+        for (String seg : path.split("/")) 
+        {
+            if (seg.isEmpty()) continue;
+
+            if (current != null) 
+            {
+                current = current.getChild(seg);
+
+                // Update action if higher priority rule found
+                if (current != null && current.action != null && current.priority >= priority) 
+                {
+                    action = current.action;
+                    priority = current.priority;
+                }
+            }
         }
 
-        NodeList children = node.getChildNodes();
-
-        for (int i = 0; i < children.getLength(); i++) {
-            maskSubtree(children.item(i));
-        }
-    }
-
-    //helps in debugging
-    public static void printNode(Node node) throws Exception {
-        Transformer transformer = TransformerFactory.newInstance().newTransformer();
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-
-        transformer.transform(new DOMSource(node), new StreamResult(System.out));
-    }
-    // System.out.print("----------------------------------\n");
-    // printNode(queryNode);
-    // System.out.print("----------------------------------\n");
+        return new ResolvedState(current, action, priority);
+    } 
 }

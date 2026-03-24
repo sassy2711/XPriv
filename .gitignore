@@ -3,7 +3,7 @@
 
 # JAR files
 *.jar
+*apache*
 
 # Generated output
 filtered-output.xml
-

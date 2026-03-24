@@ -1,18 +1,20 @@
 <privacyPolicy xmlns="http://yourcompany.com/privacy-rules">
 
     <rule id="R1" priority="60">
+        <path>/dataset/*/n_patient_info</path>
+        <action type="refuse" />
+        <appliesTo>
+            <role>INTERN</role>
+            <role>MANAGER</role>
+        </appliesTo>
+    </rule>
+    
+    <rule id="R2" priority="100">
         <path>/dataset/*/n_patient_info/n_residental_info</path>
         <action type="mask" />
         <appliesTo>
             <role>INTERN</role>
-        </appliesTo>
-    </rule>
-    
-    <rule id="R2" priority="50">
-        <path>/dataset/*/n_patient_info/n_residental_info</path>
-        <action type="refuse" />
-        <appliesTo>
-            <role>INTERN</role>
+            <role>MANAGER</role>
         </appliesTo>
     </rule>
 
