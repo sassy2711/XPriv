@@ -33,12 +33,10 @@ public class PrivacyEngine
         String ruleFile = "../policies/corona-policy.xml";
 
         // XPath query to select nodes
-        String queryXPath = "/dataset/*/n_patient_info";
+        String queryXPath = "/dataset/*/n_patient_info/n_residental_info";
 
         // User role for filtering
         String userRole = "MANAGER";
-
-        XMLHelper xmlHelper = new XMLHelper();
 
         // Load XML documents
         Document dataDoc = xmlHelper.loadXML(dataFile);
@@ -63,6 +61,7 @@ public class PrivacyEngine
 
         // Evaluate XPath query on data
         NodeList queryNodes = (NodeList) xpath.evaluate(queryXPath, dataDoc, XPathConstants.NODESET);
+        //this is the subset of nodes the query is interested in
 
         // Create output document
         Document outputDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
@@ -94,8 +93,8 @@ public class PrivacyEngine
     }
 
     // Recursive function to filter nodes based on rules
-    private static Node filterNode(Node source, Document destDoc, TrieNode ruleNode, String inheritedAction, int inheritedPriority) 
-    {
+    private static Node filterNode(Node source, Document destDoc, TrieNode ruleNode, String inheritedAction, int inheritedPriority) {
+    //take in the source node, and the rule to be applied to this source node
         String currentAction = inheritedAction;
         int currentPriority = inheritedPriority;
 
@@ -197,8 +196,8 @@ public class PrivacyEngine
     }
 
     // Resolve action and priority for a given path
-    private static ResolvedState resolvePathState(TrieNode root, String path) 
-    {
+    private static ResolvedState resolvePathState(TrieNode root, String path) {
+    //finds the highest priority rule applicable to the node
         TrieNode current = root;
         String action = "clear"; // default
         int priority = -1;
